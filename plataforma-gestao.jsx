@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 /* ─── Google Font ─────────────────────────────────────────── */
 const FontLink = () => (
@@ -20,16 +20,15 @@ const C = {
   text: '#111827',
   sub: '#6B7280',
   muted: '#9CA3AF',
-  hoverBg: '#F3F4F6',
   sidebarBg: '#FAFBFC',
 };
 
 /* ─── DATA ────────────────────────────────────────────────── */
 const OWNERS = {
-  pedro:    { label: 'Pedro',    role: 'Design & Criativos',                  color: '#4F6EF7' },
-  marcos:   { label: 'Marcos',   role: 'Operações & Ads',                     color: '#F59E0B' },
-  priscilla:{ label: 'Priscilla',role: 'Influenciadores & Comunicação',       color: '#EC4899' },
-  todos:    { label: 'Todos',    role: '',                                     color: '#8B5CF6' },
+  pedro:     { label: 'Pedro',     initials: 'PE', role: 'Design & Criativos',               color: '#4F6EF7', bg: '#EEF2FF' },
+  marcos:    { label: 'Marcos',    initials: 'MA', role: 'Operações & Ads',                  color: '#F59E0B', bg: '#FFFBEB' },
+  priscilla: { label: 'Priscilla', initials: 'PR', role: 'Influenciadores & Comunicação',    color: '#EC4899', bg: '#FDF2F8' },
+  todos:     { label: 'Todos',     initials: '★',  role: '',                                 color: '#8B5CF6', bg: '#F5F3FF' },
 };
 
 const PHASES = [
@@ -55,7 +54,7 @@ const PHASES = [
     tasks:[
       { id:'t5', title:'Identidade visual das duas marcas', owner:'pedro',
         tags:['BLOQUEANTE','ENTREGÁVEL: 2x BRAND GUIDE'], parallel:true, dependsOn:[],
-        subtasks:['Logo + paleta + tipografia — Loja Esquerda (tom: cores vivas, urbano, resistência)','Logo + paleta + tipografia — Loja Direita (tom: verde/amarelo, patriótico, clean)','Templates de mockup para cada produto com identidade','Manual de marca resumido (1 página) por loja','Assets para redes sociais (perfil, capa, templates stories/feed)'] },
+        subtasks:['Logo + paleta + tipografia — Loja Esquerda','Logo + paleta + tipografia — Loja Direita','Templates de mockup para cada produto com identidade','Manual de marca resumido (1 página) por loja','Assets para redes sociais (perfil, capa, templates stories/feed)'] },
       { id:'t6', title:'Configuração das lojas Shopify', owner:'marcos',
         tags:['BLOQUEANTE','ENTREGÁVEL: 2x LOJAS LIVE'], parallel:true, dependsOn:[],
         subtasks:['Criar conta Shopify para cada loja','Configurar domínio personalizado','Instalar e customizar tema (Dawn ou Sense)','Configurar gateway de pagamento (PIX obrigatório)','Criar páginas institucionais (Sobre, FAQ, Política de Troca, Termos)','Configurar integração com fornecedor de print-on-demand','Cadastrar todos os produtos com fotos, descrição e variações','Configurar frete (Correios / Melhor Envio)'] },
@@ -72,7 +71,7 @@ const PHASES = [
     tasks:[
       { id:'t9', title:'Prospecção de micro influenciadores', owner:'priscilla',
         tags:['BLOQUEANTE','ENTREGÁVEL: CRM INFLUENCIADORES'], parallel:true, dependsOn:[],
-        subtasks:['Listar 30–50 perfis alinhados — Loja Esquerda (ativistas, artistas, humoristas)','Listar 30–50 perfis alinhados — Loja Direita (conservadores, coaches, empreendedores)','Anotar seguidores, taxa de engajamento, tipo de conteúdo, contato','Classificar por prioridade (A / B / C)','Criar planilha CRM de influenciadores com status'] },
+        subtasks:['Listar 30–50 perfis alinhados — Loja Esquerda','Listar 30–50 perfis alinhados — Loja Direita','Anotar seguidores, taxa de engajamento, tipo de conteúdo, contato','Classificar por prioridade (A / B / C)','Criar planilha CRM de influenciadores com status'] },
       { id:'t10', title:'Estratégia de abordagem', owner:'priscilla',
         tags:['ENTREGÁVEL: KIT + PITCH'], parallel:true, dependsOn:[],
         subtasks:['Criar template de DM de primeiro contato personalizado','Criar template de email de apresentação da marca','Definir composição do kit por loja (produtos + embalagem + cartão)','Definir contrapartida esperada (mín 1 story + 1 post ou 1 reels)','Criar briefing criativo para o influenciador'] },
@@ -136,19 +135,16 @@ function getTaskById(id) {
   for (const ph of PHASES) for (const t of ph.tasks) if (t.id === id) return t;
   return null;
 }
-
 function calcTask(task, checked) {
   const total = task.subtasks.length;
   const done  = task.subtasks.filter((_, i) => checked[`${task.id}_${i}`]).length;
   return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
 }
-
 function calcPhase(phase, checked) {
   let total = 0, done = 0;
   phase.tasks.forEach(t => { const p = calcTask(t, checked); total += p.total; done += p.done; });
   return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
 }
-
 function calcOwner(ownerKey, checked) {
   let total = 0, done = 0;
   PHASES.forEach(ph => ph.tasks.forEach(t => {
@@ -158,19 +154,17 @@ function calcOwner(ownerKey, checked) {
   }));
   return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
 }
-
 function calcOverall(checked) {
   let total = 0, done = 0;
   PHASES.forEach(ph => ph.tasks.forEach(t => { const p = calcTask(t, checked); total += p.total; done += p.done; }));
   return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
 }
-
-/* ─── Tag styles ──────────────────────────────────────────── */
 function tagStyle(tag) {
-  if (tag.startsWith('BLOQUEANTE'))       return { bg:'#FEF2F2', color:'#EF4444', border:'#FECACA' };
-  if (tag.startsWith('ENTREGÁVEL'))       return { bg:'#F0FDF4', color:'#22C55E', border:'#BBF7D0' };
-  if (tag.startsWith('DECISÃO'))         return { bg:'#FFFBEB', color:'#D97706', border:'#FDE68A' };
-  if (tag.startsWith('CUSTO') || tag.startsWith('MARCO')) return { bg:'#FFF7ED', color:'#EA580C', border:'#FED7AA' };
+  if (tag.startsWith('BLOQUEANTE'))  return { bg:'#FEF2F2', color:'#EF4444', border:'#FECACA' };
+  if (tag.startsWith('ENTREGÁVEL'))  return { bg:'#F0FDF4', color:'#22C55E', border:'#BBF7D0' };
+  if (tag.startsWith('DECISÃO'))    return { bg:'#FFFBEB', color:'#D97706', border:'#FDE68A' };
+  if (tag.startsWith('MARCO'))       return { bg:'#FFF7ED', color:'#EA580C', border:'#FED7AA' };
+  if (tag.startsWith('CUSTO'))       return { bg:'#FFF7ED', color:'#EA580C', border:'#FED7AA' };
   return { bg:'#F3F4F6', color:'#6B7280', border:'#E5E7EB' };
 }
 
@@ -207,82 +201,65 @@ const Icon = {
       <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
-  chevronRight: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
   notes: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3"/>
-      <line x1="4" y1="5" x2="10" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-      <line x1="4" y1="7.5" x2="10" y2="7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-      <line x1="4" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <rect x="1.5" y="1.5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.3"/>
+      <line x1="4" y1="5" x2="9" y2="5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      <line x1="4" y1="7" x2="9" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      <line x1="4" y1="9" x2="7" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
     </svg>
   ),
   parallel: (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <line x1="2" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-      <line x1="2" y1="3" x2="10" y2="3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-      <line x1="2" y1="9" x2="10" y2="9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+      <line x1="1" y1="3" x2="10" y2="3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   ),
   link: (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <path d="M5 2H3a2 2 0 000 4h1m3 4h2a2 2 0 000-4H8M4 6h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-    </svg>
-  ),
-  hamburger: (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <line x1="3" y1="6" x2="17" y2="6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      <line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      <line x1="3" y1="14" x2="17" y2="14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-    </svg>
-  ),
-  close: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <line x1="4" y1="4" x2="14" y2="14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      <line x1="14" y1="4" x2="4" y2="14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+      <path d="M4.5 2H3a2 2 0 000 4h1m3 3h1.5a2 2 0 000-4H8M3.5 5.5h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
     </svg>
   ),
 };
 
-/* ─── CircularProgress ────────────────────────────────────── */
-function CircularProgress({ pct, size = 56, color = C.primary, trackColor = '#F1F5F9' }) {
-  const r = (size - 8) / 2;
-  const circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={trackColor} strokeWidth="5"/>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5"
-        strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.4s ease' }}/>
-    </svg>
-  );
-}
-
-/* ─── ProgressBar ─────────────────────────────────────────── */
-function ProgressBar({ pct, height = 4, color = C.primary }) {
-  return (
-    <div style={{ height, background: '#F1F5F9', borderRadius: 4, overflow: 'hidden' }}>
-      <div style={{ width: `${pct}%`, height: '100%', background: color,
-        borderRadius: 4, transition: 'width 0.4s ease' }}/>
-    </div>
-  );
-}
-
-/* ─── OwnerBadge ──────────────────────────────────────────── */
-function OwnerBadge({ ownerKey }) {
+/* ─── OwnerAvatar ─────────────────────────────────────────── */
+function OwnerAvatar({ ownerKey, size = 28, showLabel = false, showRing = false, pct = 0 }) {
   const o = OWNERS[ownerKey];
-  const lightColor = o.color + '22';
+  const ringR = (size + 6) / 2;
+  const circ  = 2 * Math.PI * ringR;
+
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5,
-      background: lightColor, color: o.color,
-      padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:600 }}>
-      <span style={{ width:6, height:6, borderRadius:'50%', background: o.color, flexShrink:0 }}/>
-      {o.label}
-    </span>
+    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+      {showRing ? (
+        <div style={{ position:'relative', width: size+8, height: size+8 }}>
+          <svg width={size+8} height={size+8} style={{ position:'absolute', top:0, left:0, transform:'rotate(-90deg)' }}>
+            <circle cx={(size+8)/2} cy={(size+8)/2} r={ringR-2} fill="none" stroke="#F1F5F9" strokeWidth="2.5"/>
+            <circle cx={(size+8)/2} cy={(size+8)/2} r={ringR-2} fill="none" stroke={o.color} strokeWidth="2.5"
+              strokeDasharray={`${(pct/100)*circ} ${circ}`} strokeLinecap="round"
+              style={{ transition:'stroke-dasharray 0.4s ease' }}/>
+          </svg>
+          <div style={{ position:'absolute', inset:4, borderRadius:'50%',
+            background: o.bg, display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize: size*0.33, fontWeight:700, color: o.color }}>
+            {o.initials}
+          </div>
+        </div>
+      ) : (
+        <div style={{ width:size, height:size, borderRadius:'50%',
+          background: o.bg, border:`2px solid ${o.color}33`,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize: size*0.33, fontWeight:700, color: o.color, flexShrink:0 }}>
+          {o.initials}
+        </div>
+      )}
+      {showLabel && (
+        <div>
+          <div style={{ fontSize:13, fontWeight:600, color: o.color }}>{o.label}</div>
+          {o.role && <div style={{ fontSize:11, color: C.muted }}>{o.role}</div>}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -290,99 +267,124 @@ function OwnerBadge({ ownerKey }) {
 function Tag({ label }) {
   const s = tagStyle(label);
   return (
-    <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      padding:'1px 7px', borderRadius:4, fontSize:10, fontWeight:600,
+    <span style={{ background: s.bg, color: s.color, border:`1px solid ${s.border}`,
+      padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:700,
       letterSpacing:'0.4px', textTransform:'uppercase' }}>
       {label}
     </span>
   );
 }
 
-/* ─── TaskCard ────────────────────────────────────────────── */
-function TaskCard({ task, checked, onCheck, notes, onNote, showPhaseLabel, phaseTitle }) {
-  const [expanded, setExpanded]     = useState(false);
-  const [notesOpen, setNotesOpen]   = useState(false);
-  const [noteVal, setNoteVal]       = useState(notes[task.id] || '');
-  const prog = calcTask(task, checked);
-  const progressColor = prog.pct === 100 ? C.success : C.primary;
+/* ─── ProgressBar ─────────────────────────────────────────── */
+function ProgressBar({ pct, height = 4, color = C.primary }) {
+  return (
+    <div style={{ height, background:'#F1F5F9', borderRadius:4, overflow:'hidden' }}>
+      <div style={{ width:`${pct}%`, height:'100%', background:color,
+        borderRadius:4, transition:'width 0.4s ease' }}/>
+    </div>
+  );
+}
 
+/* ─── CircularProgress ────────────────────────────────────── */
+function CircularProgress({ pct, size = 52, color = C.primary }) {
+  const r = (size - 10) / 2;
+  const circ = 2 * Math.PI * r;
+  return (
+    <svg width={size} height={size} style={{ transform:'rotate(-90deg)' }}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#F1F5F9" strokeWidth="5"/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5"
+        strokeDasharray={`${(pct/100)*circ} ${circ}`} strokeLinecap="round"
+        style={{ transition:'stroke-dasharray 0.4s ease' }}/>
+    </svg>
+  );
+}
+
+/* ─── TaskCard ────────────────────────────────────────────── */
+function TaskCard({ task, checked, onCheck, notes, onNote }) {
+  const [expanded,  setExpanded]  = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [noteVal,   setNoteVal]   = useState(notes[task.id] || '');
+
+  const prog = calcTask(task, checked);
+  const o    = OWNERS[task.owner];
+  const progressColor = prog.pct === 100 ? C.success : o.color;
   const deps = task.dependsOn.map(id => getTaskById(id)?.title).filter(Boolean);
 
-  function handleNote(e) {
-    const v = e.target.value;
-    setNoteVal(v);
-    onNote(task.id, v);
-  }
+  function handleNote(e) { const v = e.target.value; setNoteVal(v); onNote(task.id, v); }
 
   return (
-    <div style={{ background: C.white, border: `1px solid ${C.border}`,
-      borderRadius: 10, marginBottom: 8,
+    <div style={{
+      background: C.white,
+      border: `1px solid ${C.border}`,
+      borderLeft: `4px solid ${o.color}`,
+      borderRadius: 10,
+      marginBottom: 8,
       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      overflow: 'hidden',
       transition: 'box-shadow 0.15s ease',
-      overflow: 'hidden' }}>
-
-      {/* Card header row */}
+    }}>
+      {/* ── Card header ── */}
       <div
         onClick={() => setExpanded(e => !e)}
-        style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px',
+        style={{
+          display:'flex', alignItems:'center', gap:12,
+          padding:'12px 16px 12px 14px',
           cursor:'pointer', userSelect:'none',
-          background: expanded ? '#F9FAFB' : C.white,
-          transition: 'background 0.15s ease' }}>
+          background: expanded ? `${o.bg}66` : C.white,
+          transition:'background 0.15s ease',
+        }}>
 
-        {/* Expand chevron */}
-        <span style={{ color: C.muted, flexShrink:0,
-          transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-          transition: 'transform 0.2s ease' }}>
-          {Icon.chevronDown}
-        </span>
+        {/* Owner avatar — prominent, left side */}
+        <OwnerAvatar ownerKey={task.owner} size={34}/>
 
-        {/* Title */}
+        {/* Title + progress */}
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:4 }}>
-            {showPhaseLabel && phaseTitle && (
-              <span style={{ fontSize:10, color: C.muted, fontWeight:600,
-                background:'#F3F4F6', padding:'1px 6px', borderRadius:4, textTransform:'uppercase' }}>
-                {phaseTitle}
-              </span>
-            )}
-            <span style={{ fontSize:13, fontWeight:600, color: prog.pct===100 ? C.muted : C.text,
-              textDecoration: prog.pct===100 ? 'line-through' : 'none' }}>
-              {task.title}
-            </span>
+          <div style={{ fontSize:13, fontWeight:600,
+            color: prog.pct === 100 ? C.muted : C.text,
+            textDecoration: prog.pct === 100 ? 'line-through' : 'none',
+            marginBottom:6, lineHeight:1.4 }}>
+            {task.title}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <div style={{ flex:1, maxWidth:180 }}>
-              <ProgressBar pct={prog.pct} color={progressColor}/>
+            <div style={{ flex:1 }}>
+              <ProgressBar pct={prog.pct} height={4} color={progressColor}/>
             </div>
-            <span style={{ fontSize:11, color: C.muted, fontWeight:500, whiteSpace:'nowrap' }}>
+            <span style={{ fontSize:11, color: C.muted, fontWeight:600, whiteSpace:'nowrap' }}>
               {prog.done}/{prog.total}
             </span>
           </div>
         </div>
 
-        {/* Parallel / depends indicators */}
+        {/* Right side: parallel badge + owner name label + chevron */}
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
           {task.parallel && (
             <span style={{ display:'inline-flex', alignItems:'center', gap:3,
-              fontSize:10, color:'#8B5CF6', fontWeight:600,
-              background:'#F5F3FF', padding:'1px 6px', borderRadius:4 }}>
+              fontSize:10, color:'#8B5CF6', fontWeight:700,
+              background:'#F5F3FF', padding:'2px 7px', borderRadius:4,
+              letterSpacing:'0.3px' }}>
               {Icon.parallel} Paralela
             </span>
           )}
-          <OwnerBadge ownerKey={task.owner}/>
+          <span style={{ fontSize:11, fontWeight:700, color: o.color }}>
+            {o.label}
+          </span>
+          <span style={{ color: C.muted, transition:'transform 0.2s ease',
+            transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+            {Icon.chevronDown}
+          </span>
         </div>
       </div>
 
-      {/* Expanded content */}
+      {/* ── Expanded content ── */}
       {expanded && (
-        <div style={{ borderTop: `1px solid ${C.border}` }}>
+        <div style={{ borderTop:`1px solid ${o.color}22` }}>
 
           {/* Dependencies */}
           {deps.length > 0 && (
-            <div style={{ padding:'8px 16px 0', display:'flex', alignItems:'center', gap:5 }}>
+            <div style={{ padding:'8px 16px 0 16px', display:'flex', alignItems:'center', gap:5 }}>
               <span style={{ color: C.muted }}>{Icon.link}</span>
               <span style={{ fontSize:11, color: C.muted }}>
-                Depende de: {deps.join(', ')}
+                Depende de: <strong style={{ color: C.sub }}>{deps.join(', ')}</strong>
               </span>
             </div>
           )}
@@ -390,23 +392,25 @@ function TaskCard({ task, checked, onCheck, notes, onNote, showPhaseLabel, phase
           {/* Subtasks */}
           <div style={{ padding:'10px 16px' }}>
             {task.subtasks.map((sub, i) => {
-              const key   = `${task.id}_${i}`;
-              const done  = !!checked[key];
+              const key  = `${task.id}_${i}`;
+              const done = !!checked[key];
               return (
                 <div key={key} onClick={() => onCheck(key, !done)}
-                  style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'6px 0',
-                    cursor:'pointer', borderBottom: i < task.subtasks.length-1 ? `1px solid #F9FAFB` : 'none' }}>
-                  {/* Checkbox */}
-                  <span style={{ width:18, height:18, borderRadius:5, flexShrink:0, marginTop:1,
+                  style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'7px 0',
+                    cursor:'pointer',
+                    borderBottom: i < task.subtasks.length-1 ? `1px solid #F9FAFB` : 'none' }}>
+                  <span style={{
+                    width:18, height:18, borderRadius:5, flexShrink:0, marginTop:1,
                     border: done ? 'none' : `2px solid #CBD5E1`,
-                    background: done ? C.primary : 'transparent',
+                    background: done ? o.color : 'transparent',
                     display:'flex', alignItems:'center', justifyContent:'center',
-                    transition: 'all 0.15s ease' }}>
+                    transition:'all 0.15s ease',
+                  }}>
                     {done && Icon.check}
                   </span>
                   <span style={{ fontSize:13, color: done ? C.muted : '#374151',
                     textDecoration: done ? 'line-through' : 'none',
-                    lineHeight:1.5, transition: 'all 0.15s ease' }}>
+                    lineHeight:1.5, transition:'all 0.15s ease' }}>
                     {sub}
                   </span>
                 </div>
@@ -414,18 +418,22 @@ function TaskCard({ task, checked, onCheck, notes, onNote, showPhaseLabel, phase
             })}
           </div>
 
-          {/* Tags + Notes toggle */}
-          <div style={{ padding:'6px 16px 10px', display:'flex', alignItems:'center',
+          {/* Tags + Notes */}
+          <div style={{ padding:'6px 16px 12px', display:'flex', alignItems:'center',
             justifyContent:'space-between', flexWrap:'wrap', gap:6 }}>
             <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
               {task.tags.map(tag => <Tag key={tag} label={tag}/>)}
             </div>
-            <button onClick={(e) => { e.stopPropagation(); setNotesOpen(n => !n); }}
-              style={{ display:'flex', alignItems:'center', gap:5, background:'none',
-                border: `1px solid ${C.border}`, borderRadius:6, padding:'3px 10px',
-                fontSize:12, color: notesOpen ? C.primary : C.sub, cursor:'pointer',
-                fontFamily:'inherit', transition: 'all 0.15s ease',
-                fontWeight: notesOpen ? 600 : 500 }}>
+            <button
+              onClick={e => { e.stopPropagation(); setNotesOpen(n => !n); }}
+              style={{ display:'flex', alignItems:'center', gap:5,
+                background: notesOpen ? `${o.color}15` : 'none',
+                border:`1px solid ${notesOpen ? o.color+'55' : C.border}`,
+                borderRadius:6, padding:'3px 10px',
+                fontSize:12, color: notesOpen ? o.color : C.sub,
+                cursor:'pointer', fontFamily:'inherit',
+                fontWeight: notesOpen ? 600 : 500,
+                transition:'all 0.15s ease' }}>
               {Icon.notes}
               {noteVal ? 'Ver anotações' : 'Anotações'}
             </button>
@@ -439,11 +447,12 @@ function TaskCard({ task, checked, onCheck, notes, onNote, showPhaseLabel, phase
                 onChange={handleNote}
                 placeholder="Escreva anotações sobre esta tarefa..."
                 onClick={e => e.stopPropagation()}
-                style={{ width:'100%', minHeight:80, background:'#F9FAFB',
-                  border: `1px solid ${C.border}`, borderRadius:8, padding:'10px 12px',
-                  fontSize:13, color: C.text, fontFamily:'Plus Jakarta Sans, sans-serif',
-                  resize:'vertical', outline:'none', boxSizing:'border-box',
-                  lineHeight:1.6 }}
+                style={{ width:'100%', minHeight:80,
+                  background:'#F9FAFB', border:`1px solid ${C.border}`,
+                  borderRadius:8, padding:'10px 12px',
+                  fontSize:13, color:C.text,
+                  fontFamily:'Plus Jakarta Sans, sans-serif',
+                  resize:'vertical', outline:'none', boxSizing:'border-box', lineHeight:1.6 }}
               />
             </div>
           )}
@@ -455,137 +464,163 @@ function TaskCard({ task, checked, onCheck, notes, onNote, showPhaseLabel, phase
 
 /* ─── Dashboard View ──────────────────────────────────────── */
 function DashboardView({ checked, onNavigatePhase }) {
-  const overall  = calcOverall(checked);
-  const ownerKeys = ['pedro','marcos','priscilla'];
+  const overall    = calcOverall(checked);
+  const ownerKeys  = ['pedro','marcos','priscilla'];
 
-  // Upcoming: next 3 incomplete tasks (from phases in order)
   const upcoming = [];
   for (const ph of PHASES) {
     for (const t of ph.tasks) {
-      const p = calcTask(t, checked);
-      if (p.pct < 100 && upcoming.length < 3) upcoming.push({ task:t, phase:ph });
+      if (calcTask(t, checked).pct < 100 && upcoming.length < 3) upcoming.push({ task:t, phase:ph });
     }
     if (upcoming.length >= 3) break;
   }
 
-  // Blocking tasks not complete
   const blocking = [];
-  for (const ph of PHASES) {
-    for (const t of ph.tasks) {
-      if (t.tags.some(tag => tag.startsWith('BLOQUEANTE'))) {
-        const p = calcTask(t, checked);
-        if (p.pct < 100) blocking.push({ task:t, phase:ph });
-      }
-    }
+  for (const ph of PHASES) for (const t of ph.tasks) {
+    if (t.tags.some(tag => tag.startsWith('BLOQUEANTE')) && calcTask(t, checked).pct < 100)
+      blocking.push({ task:t, phase:ph });
   }
 
-  const cardStyle = {
-    background: C.white, border: `1px solid ${C.border}`, borderRadius:12,
-    padding:20, boxShadow:'0 1px 3px rgba(0,0,0,0.04)',
+  const card = {
+    background: C.white, border:`1px solid ${C.border}`,
+    borderRadius:12, padding:20, boxShadow:'0 1px 3px rgba(0,0,0,0.04)',
   };
 
   return (
     <div style={{ padding:'28px 32px', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
 
-      {/* Row 1: 3 metric cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px,1fr))', gap:16, marginBottom:24 }}>
+      {/* Metric cards */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:16, marginBottom:28 }}>
 
-        {/* Overall progress */}
-        <div style={cardStyle}>
-          <div style={{ fontSize:11, fontWeight:700, color: C.muted, textTransform:'uppercase',
-            letterSpacing:'0.8px', marginBottom:12 }}>Progresso Geral</div>
-          <div style={{ fontSize:40, fontWeight:700, color: C.text, marginBottom:10 }}>{overall.pct}%</div>
+        {/* Overall */}
+        <div style={card}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:12 }}>
+            Progresso Geral
+          </div>
+          <div style={{ fontSize:42, fontWeight:700, color:C.text, lineHeight:1, marginBottom:12 }}>{overall.pct}%</div>
           <ProgressBar pct={overall.pct} height={6}/>
-          <div style={{ fontSize:12, color: C.muted, marginTop:8 }}>
+          <div style={{ fontSize:12, color:C.muted, marginTop:8 }}>
             {overall.done} de {overall.total} sub-tarefas concluídas
           </div>
         </div>
 
         {/* Upcoming */}
-        <div style={cardStyle}>
-          <div style={{ fontSize:11, fontWeight:700, color: C.muted, textTransform:'uppercase',
-            letterSpacing:'0.8px', marginBottom:12 }}>Próximas Entregas</div>
+        <div style={card}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:12 }}>
+            Próximas Entregas
+          </div>
           {upcoming.length === 0
-            ? <div style={{ fontSize:13, color: C.muted }}>Tudo concluído.</div>
+            ? <div style={{ fontSize:13, color:C.muted }}>Tudo concluído.</div>
             : upcoming.map(({ task, phase }) => (
-              <div key={task.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                padding:'6px 0', borderBottom:`1px solid #F9FAFB` }}>
-                <div>
-                  <div style={{ fontSize:12, fontWeight:600, color: C.text, marginBottom:2 }}>{task.title}</div>
-                  <div style={{ fontSize:11, color: C.muted }}>{phase.timeline}</div>
+              <div key={task.id} style={{ display:'flex', alignItems:'center', gap:10,
+                padding:'7px 0', borderBottom:`1px solid #F9FAFB` }}>
+                <OwnerAvatar ownerKey={task.owner} size={26}/>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.text,
+                    whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                    {task.title}
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted }}>{phase.timeline}</div>
                 </div>
-                <OwnerBadge ownerKey={task.owner}/>
               </div>
             ))
           }
         </div>
 
         {/* Blocking */}
-        <div style={{ ...cardStyle, borderTop: blocking.length > 0 ? `3px solid ${C.danger}` : `1px solid ${C.border}` }}>
+        <div style={{ ...card, borderTop: blocking.length > 0 ? `3px solid ${C.danger}` : `1px solid ${C.border}` }}>
           <div style={{ fontSize:11, fontWeight:700, color: blocking.length > 0 ? C.danger : C.muted,
             textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:12 }}>
             Tarefas Bloqueantes
           </div>
           {blocking.length === 0
-            ? <div style={{ fontSize:13, color: C.muted }}>Nenhuma pendente.</div>
+            ? <div style={{ fontSize:13, color:C.muted }}>Nenhuma pendente.</div>
             : blocking.map(({ task }) => (
-              <div key={task.id} style={{ display:'flex', alignItems:'center', gap:8,
-                padding:'6px 0', borderBottom:`1px solid #F9FAFB` }}>
-                <span style={{ width:6, height:6, borderRadius:'50%', background: C.danger, flexShrink:0 }}/>
-                <span style={{ fontSize:12, fontWeight:600, color: C.text }}>{task.title}</span>
+              <div key={task.id} style={{ display:'flex', alignItems:'center', gap:10,
+                padding:'7px 0', borderBottom:`1px solid #F9FAFB` }}>
+                <OwnerAvatar ownerKey={task.owner} size={24}/>
+                <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{task.title}</span>
               </div>
             ))
           }
         </div>
       </div>
 
-      {/* Row 2: Phase cards */}
-      <div style={{ fontSize:13, fontWeight:700, color: C.sub, textTransform:'uppercase',
-        letterSpacing:'0.6px', marginBottom:12 }}>Fases</div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px,1fr))', gap:12, marginBottom:24 }}>
+      {/* Phases */}
+      <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
+        letterSpacing:'0.8px', marginBottom:12 }}>Fases</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))', gap:12, marginBottom:28 }}>
         {PHASES.map(ph => {
           const p = calcPhase(ph, checked);
           const isActive = p.pct > 0 && p.pct < 100;
+          const isDone   = p.pct === 100;
+          // collect unique owners in this phase
+          const phOwners = [...new Set(ph.tasks.map(t => t.owner))];
           return (
             <div key={ph.id} onClick={() => onNavigatePhase(ph.id)}
-              style={{ ...cardStyle, cursor:'pointer',
+              style={{ ...card, cursor:'pointer',
                 background: isActive ? '#F5F7FF' : C.white,
                 borderColor: isActive ? '#C7D2FE' : C.border,
-                transition: 'all 0.15s ease' }}>
-              <div style={{ fontSize:13, fontWeight:700, color: C.text, marginBottom:4 }}>{ph.title}</div>
-              <div style={{ fontSize:11, color: C.muted, marginBottom:10 }}>{ph.timeline}</div>
-              <ProgressBar pct={p.pct} color={isActive ? C.primary : p.pct===100 ? C.success : C.muted}/>
+                transition:'all 0.15s ease' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ph.title}</div>
+                  <div style={{ fontSize:10, color:C.muted }}>{ph.timeline}</div>
+                </div>
+                {/* Owner avatars for this phase */}
+                <div style={{ display:'flex', gap:-4 }}>
+                  {phOwners.slice(0,3).map((ok,i) => (
+                    <div key={ok} style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 3-i, position:'relative' }}>
+                      <OwnerAvatar ownerKey={ok} size={22}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <ProgressBar pct={p.pct}
+                color={isDone ? C.success : isActive ? C.primary : C.muted}/>
               <div style={{ display:'flex', justifyContent:'space-between', marginTop:8 }}>
-                <span style={{ fontSize:11, color: C.muted }}>{p.done}/{p.total} sub-tarefas</span>
+                <span style={{ fontSize:11, color:C.muted }}>{p.done}/{p.total} tarefas</span>
                 <span style={{ fontSize:12, fontWeight:700,
-                  color: p.pct===100 ? C.success : isActive ? C.primary : C.muted }}>{p.pct}%</span>
+                  color: isDone ? C.success : isActive ? C.primary : C.muted }}>{p.pct}%</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Row 3: Owner progress */}
-      <div style={{ fontSize:13, fontWeight:700, color: C.sub, textTransform:'uppercase',
-        letterSpacing:'0.6px', marginBottom:12 }}>Progresso da Equipe</div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px,1fr))', gap:12 }}>
+      {/* Team progress */}
+      <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
+        letterSpacing:'0.8px', marginBottom:12 }}>Equipe</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:12 }}>
         {ownerKeys.map(key => {
           const o = OWNERS[key];
           const p = calcOwner(key, checked);
           return (
-            <div key={key} style={cardStyle}>
-              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div key={key} style={{ ...card, overflow:'hidden', padding:0 }}>
+              {/* Colored header strip */}
+              <div style={{ background: o.bg, borderBottom:`1px solid ${o.color}22`,
+                padding:'16px 20px', display:'flex', alignItems:'center', gap:12 }}>
                 <div style={{ position:'relative', flexShrink:0 }}>
-                  <CircularProgress pct={p.pct} size={56} color={o.color}/>
+                  <CircularProgress pct={p.pct} size={52} color={o.color}/>
                   <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
-                    justifyContent:'center', fontSize:12, fontWeight:700, color: o.color }}>
+                    justifyContent:'center', fontSize:11, fontWeight:700, color:o.color }}>
                     {p.pct}%
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize:14, fontWeight:700, color: C.text }}>{o.label}</div>
-                  <div style={{ fontSize:11, color: C.muted, marginTop:2 }}>{o.role}</div>
-                  <div style={{ fontSize:12, color: C.muted, marginTop:4 }}>{p.done}/{p.total}</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:o.color }}>{o.label}</div>
+                  <div style={{ fontSize:11, color: o.color+'99', marginTop:1 }}>{o.role}</div>
+                </div>
+              </div>
+              {/* Stats */}
+              <div style={{ padding:'12px 20px', display:'flex', gap:20 }}>
+                <div>
+                  <div style={{ fontSize:20, fontWeight:700, color:C.success }}>{p.done}</div>
+                  <div style={{ fontSize:11, color:C.muted }}>concluídas</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:20, fontWeight:700, color:C.sub }}>{p.total - p.done}</div>
+                  <div style={{ fontSize:11, color:C.muted }}>pendentes</div>
                 </div>
               </div>
             </div>
@@ -598,29 +633,34 @@ function DashboardView({ checked, onNavigatePhase }) {
 
 /* ─── Phases View ─────────────────────────────────────────── */
 function PhasesView({ checked, onCheck, notes, onNote, initialPhase }) {
-  const [filterPhase,  setFilterPhase]  = useState(initialPhase || 'all');
-  const [filterOwner,  setFilterOwner]  = useState('all');
+  const [filterPhase, setFilterPhase] = useState(initialPhase || 'all');
+  const [filterOwner, setFilterOwner] = useState('all');
 
   useEffect(() => { if (initialPhase) setFilterPhase(initialPhase); }, [initialPhase]);
 
   const ownerKeys = ['all','pedro','marcos','priscilla'];
 
-  const pillBase = { padding:'4px 14px', borderRadius:20, fontSize:12, fontWeight:600,
-    cursor:'pointer', border:'1px solid', transition:'all 0.15s ease', fontFamily:'Plus Jakarta Sans, sans-serif' };
+  const pillBase = {
+    display:'inline-flex', alignItems:'center', gap:6,
+    padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:600,
+    cursor:'pointer', border:'1px solid', transition:'all 0.15s ease',
+    fontFamily:'Plus Jakarta Sans, sans-serif',
+  };
 
   function pillStyle(active, color = C.primary) {
     return active
-      ? { ...pillBase, background: color+'22', color, borderColor: color+'55' }
-      : { ...pillBase, background: C.white, color: C.sub, borderColor: C.border };
+      ? { ...pillBase, background:`${color}18`, color, borderColor:`${color}44` }
+      : { ...pillBase, background:C.white, color:C.sub, borderColor:C.border };
   }
 
   const visiblePhases = filterPhase === 'all' ? PHASES : PHASES.filter(ph => ph.id === filterPhase);
 
   return (
     <div style={{ padding:'28px 32px', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
-      {/* Filters */}
-      <div style={{ marginBottom:20, display:'flex', flexWrap:'wrap', gap:8, alignItems:'center' }}>
-        <span style={{ fontSize:11, fontWeight:700, color: C.muted, textTransform:'uppercase',
+
+      {/* Filter: Phase */}
+      <div style={{ marginBottom:12, display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+        <span style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
           letterSpacing:'0.8px', marginRight:4 }}>Fase</span>
         <button style={pillStyle(filterPhase==='all')} onClick={() => setFilterPhase('all')}>Todas</button>
         {PHASES.map(ph => (
@@ -628,15 +668,27 @@ function PhasesView({ checked, onCheck, notes, onNote, initialPhase }) {
             onClick={() => setFilterPhase(ph.id)}>{ph.title}</button>
         ))}
       </div>
-      <div style={{ marginBottom:24, display:'flex', flexWrap:'wrap', gap:8, alignItems:'center' }}>
-        <span style={{ fontSize:11, fontWeight:700, color: C.muted, textTransform:'uppercase',
+
+      {/* Filter: Owner — with avatars */}
+      <div style={{ marginBottom:24, display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+        <span style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
           letterSpacing:'0.8px', marginRight:4 }}>Responsável</span>
-        {ownerKeys.map(k => (
-          <button key={k} style={pillStyle(filterOwner===k, k==='all' ? C.primary : OWNERS[k]?.color)}
-            onClick={() => setFilterOwner(k)}>
-            {k === 'all' ? 'Todos' : OWNERS[k].label}
-          </button>
-        ))}
+        <button style={pillStyle(filterOwner==='all')} onClick={() => setFilterOwner('all')}>
+          Todos
+        </button>
+        {['pedro','marcos','priscilla'].map(k => {
+          const o   = OWNERS[k];
+          const act = filterOwner === k;
+          return (
+            <button key={k}
+              style={{ ...pillBase, background: act ? `${o.color}18` : C.white,
+                color: act ? o.color : C.sub, borderColor: act ? `${o.color}44` : C.border }}
+              onClick={() => setFilterOwner(k)}>
+              <OwnerAvatar ownerKey={k} size={18}/>
+              {o.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Phase sections */}
@@ -644,24 +696,30 @@ function PhasesView({ checked, onCheck, notes, onNote, initialPhase }) {
         const filteredTasks = ph.tasks.filter(t =>
           filterOwner === 'all' || t.owner === filterOwner || t.owner === 'todos'
         );
-        if (filteredTasks.length === 0) return null;
+        if (!filteredTasks.length) return null;
         const phProg = calcPhase(ph, checked);
-
         return (
           <div key={ph.id} style={{ marginBottom:32 }}>
             {/* Phase header */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-              marginBottom:12, flexWrap:'wrap', gap:8 }}>
+              marginBottom:12, flexWrap:'wrap', gap:10,
+              paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
               <div>
-                <div style={{ fontSize:15, fontWeight:700, color: C.text }}>{ph.title}</div>
-                <div style={{ fontSize:11, color: C.muted, marginTop:2 }}>{ph.timeline}</div>
+                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ph.title}</div>
+                <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{ph.timeline}</div>
               </div>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:120 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                {/* Owner avatars */}
+                <div style={{ display:'flex', gap:4 }}>
+                  {[...new Set(ph.tasks.map(t => t.owner))].map(ok => (
+                    <OwnerAvatar key={ok} ownerKey={ok} size={26}/>
+                  ))}
+                </div>
+                <div style={{ width:100 }}>
                   <ProgressBar pct={phProg.pct} height={5}
                     color={phProg.pct===100 ? C.success : C.primary}/>
                 </div>
-                <span style={{ fontSize:13, fontWeight:700,
+                <span style={{ fontSize:13, fontWeight:700, minWidth:36,
                   color: phProg.pct===100 ? C.success : C.primary }}>{phProg.pct}%</span>
               </div>
             </div>
@@ -681,70 +739,79 @@ function PhasesView({ checked, onCheck, notes, onNote, initialPhase }) {
 function MyView({ checked, onCheck, notes, onNote }) {
   const [active, setActive] = useState('pedro');
   const ownerKeys = ['pedro','marcos','priscilla'];
-
   const p = calcOwner(active, checked);
   const o = OWNERS[active];
 
   return (
     <div style={{ padding:'28px 32px', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
+
       {/* Tabs */}
-      <div style={{ display:'flex', gap:4, marginBottom:24,
-        background: C.white, border:`1px solid ${C.border}`, borderRadius:10,
-        padding:4, width:'fit-content' }}>
+      <div style={{ display:'flex', gap:6, marginBottom:24, flexWrap:'wrap' }}>
         {ownerKeys.map(k => {
-          const ow = OWNERS[k];
-          const isActive = k === active;
+          const ow     = OWNERS[k];
+          const isAct  = k === active;
           return (
             <button key={k} onClick={() => setActive(k)}
-              style={{ padding:'7px 20px', borderRadius:8, border:'none', cursor:'pointer',
-                fontFamily:'Plus Jakarta Sans, sans-serif', fontSize:13, fontWeight:600,
-                background: isActive ? ow.color : 'transparent',
-                color: isActive ? '#fff' : C.sub,
-                transition: 'all 0.2s ease' }}>
+              style={{ display:'inline-flex', alignItems:'center', gap:8,
+                padding:'8px 18px', borderRadius:10,
+                border: isAct ? `2px solid ${ow.color}` : `1px solid ${C.border}`,
+                cursor:'pointer', fontFamily:'Plus Jakarta Sans, sans-serif',
+                fontSize:13, fontWeight:700,
+                background: isAct ? ow.bg : C.white,
+                color: isAct ? ow.color : C.sub,
+                transition:'all 0.2s ease', boxShadow: isAct ? `0 0 0 3px ${ow.color}22` : 'none' }}>
+              <OwnerAvatar ownerKey={k} size={22}/>
               {ow.label}
             </button>
           );
         })}
       </div>
 
-      {/* Summary card */}
-      <div style={{ background: C.white, border:`1px solid ${C.border}`, borderRadius:12,
-        padding:20, marginBottom:24, boxShadow:'0 1px 3px rgba(0,0,0,0.04)',
-        display:'flex', alignItems:'center', gap:20 }}>
-        <div style={{ position:'relative' }}>
-          <CircularProgress pct={p.pct} size={70} color={o.color}/>
+      {/* Summary hero card */}
+      <div style={{ background: o.bg, border:`1px solid ${o.color}33`,
+        borderRadius:14, padding:'20px 24px', marginBottom:24,
+        display:'flex', alignItems:'center', gap:24 }}>
+        <div style={{ position:'relative', flexShrink:0 }}>
+          <CircularProgress pct={p.pct} size={72} color={o.color}/>
           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
-            justifyContent:'center', fontSize:14, fontWeight:700, color: o.color }}>
+            justifyContent:'center', fontSize:14, fontWeight:700, color:o.color }}>
             {p.pct}%
           </div>
         </div>
-        <div>
-          <div style={{ fontSize:18, fontWeight:700, color: C.text }}>{o.label}</div>
-          <div style={{ fontSize:12, color: C.muted, marginTop:2 }}>{o.role}</div>
-          <div style={{ display:'flex', gap:16, marginTop:8 }}>
-            <div style={{ textAlign:'center' }}>
-              <div style={{ fontSize:22, fontWeight:700, color: C.success }}>{p.done}</div>
-              <div style={{ fontSize:11, color: C.muted }}>concluídas</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:20, fontWeight:700, color:o.color }}>{o.label}</div>
+          <div style={{ fontSize:12, color:`${o.color}99`, marginTop:2, marginBottom:14 }}>{o.role}</div>
+          <div style={{ display:'flex', gap:24 }}>
+            <div>
+              <div style={{ fontSize:24, fontWeight:700, color:C.success }}>{p.done}</div>
+              <div style={{ fontSize:11, color:C.sub, marginTop:1 }}>concluídas</div>
             </div>
-            <div style={{ textAlign:'center' }}>
-              <div style={{ fontSize:22, fontWeight:700, color: C.sub }}>{p.total - p.done}</div>
-              <div style={{ fontSize:11, color: C.muted }}>pendentes</div>
+            <div>
+              <div style={{ fontSize:24, fontWeight:700, color:o.color }}>{p.total - p.done}</div>
+              <div style={{ fontSize:11, color:C.sub, marginTop:1 }}>pendentes</div>
+            </div>
+            <div>
+              <div style={{ fontSize:24, fontWeight:700, color:C.sub }}>{p.total}</div>
+              <div style={{ fontSize:11, color:C.sub, marginTop:1 }}>total</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tasks grouped by phase */}
+      {/* Tasks by phase */}
       {PHASES.map(ph => {
         const tasks = ph.tasks.filter(t => t.owner === active || t.owner === 'todos');
-        if (tasks.length === 0) return null;
+        if (!tasks.length) return null;
         return (
           <div key={ph.id} style={{ marginBottom:28 }}>
-            <div style={{ fontSize:11, fontWeight:700, color: C.muted, textTransform:'uppercase',
-              letterSpacing:'0.8px', marginBottom:10 }}>{ph.title}</div>
+            <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
+              letterSpacing:'0.8px', marginBottom:10,
+              paddingBottom:8, borderBottom:`1px solid ${C.border}` }}>
+              {ph.title} · <span style={{ color:C.muted, fontWeight:500 }}>{ph.timeline}</span>
+            </div>
             {tasks.map(task => (
               <TaskCard key={task.id} task={task} checked={checked} onCheck={onCheck}
-                notes={notes} onNote={onNote} showPhaseLabel={false}/>
+                notes={notes} onNote={onNote}/>
             ))}
           </div>
         );
@@ -755,33 +822,33 @@ function MyView({ checked, onCheck, notes, onNote }) {
 
 /* ─── Sidebar ─────────────────────────────────────────────── */
 function Sidebar({ view, setView, checked, ownerFilter, setOwnerFilter, onClose }) {
-  const overall = calcOverall(checked);
-  const ownerKeys = ['pedro','marcos','priscilla'];
-
-  const navItems = [
-    { id:'dashboard', label:'Dashboard',   icon: Icon.dashboard },
-    { id:'phases',    label:'Fases',        icon: Icon.phases    },
-    { id:'myview',    label:'Minha Visão',  icon: Icon.person    },
+  const overall    = calcOverall(checked);
+  const ownerKeys  = ['pedro','marcos','priscilla'];
+  const navItems   = [
+    { id:'dashboard', label:'Dashboard',  icon:Icon.dashboard },
+    { id:'phases',    label:'Fases',       icon:Icon.phases   },
+    { id:'myview',    label:'Minha Visão', icon:Icon.person   },
   ];
 
   return (
-    <div style={{ width:220, minWidth:220, background: C.sidebarBg,
+    <div style={{ width:228, minWidth:228, background:C.sidebarBg,
       borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column',
       height:'100%', boxSizing:'border-box', flexShrink:0 }}>
 
-      {/* Logo / Title */}
+      {/* Header */}
       <div style={{ padding:'20px 20px 16px', borderBottom:`1px solid ${C.border}`,
         display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <div style={{ fontSize:14, fontWeight:700, color: C.text, lineHeight:1.3 }}>
-            Projeto Copa 2026
-          </div>
-          <div style={{ fontSize:11, color: C.muted, marginTop:2 }}>Gestão de Projeto</div>
+          <div style={{ fontSize:14, fontWeight:700, color:C.text }}>Projeto Copa 2026</div>
+          <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>Gestão de Projeto</div>
         </div>
         {onClose && (
           <button onClick={onClose}
-            style={{ background:'none', border:'none', cursor:'pointer', color: C.muted, padding:4 }}>
-            {Icon.close}
+            style={{ background:'none', border:'none', cursor:'pointer', color:C.muted, padding:4 }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
           </button>
         )}
       </div>
@@ -806,52 +873,61 @@ function Sidebar({ view, setView, checked, ownerFilter, setOwnerFilter, onClose 
         })}
       </nav>
 
-      {/* Divider */}
-      <div style={{ borderTop:`1px solid ${C.border}`, margin:'4px 12px 10px' }}/>
+      <div style={{ borderTop:`1px solid ${C.border}`, margin:'4px 12px 14px' }}/>
 
-      {/* Team */}
-      <div style={{ padding:'0 20px' }}>
-        <div style={{ fontSize:10, fontWeight:700, color: C.muted, textTransform:'uppercase',
-          letterSpacing:'1px', marginBottom:10 }}>Equipe</div>
+      {/* Team — main visual element */}
+      <div style={{ padding:'0 16px', flex:1 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:C.muted, textTransform:'uppercase',
+          letterSpacing:'1px', marginBottom:12 }}>Equipe</div>
+
         {ownerKeys.map(key => {
-          const o = OWNERS[key];
-          const p = calcOwner(key, checked);
-          const isActive = ownerFilter === key;
+          const o      = OWNERS[key];
+          const p      = calcOwner(key, checked);
+          const isAct  = ownerFilter === key;
           return (
-            <button key={key} onClick={() => setOwnerFilter(isActive ? null : key)}
-              style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                width:'100%', padding:'7px 8px', borderRadius:8, border:'none', cursor:'pointer',
-                background: isActive ? o.color+'18' : 'transparent',
+            <button key={key}
+              onClick={() => setOwnerFilter(isAct ? null : key)}
+              style={{ display:'flex', alignItems:'center', gap:10, width:'100%',
+                padding:'8px 10px', borderRadius:10, border:'none', cursor:'pointer',
+                background: isAct ? o.bg : 'transparent',
+                outline: isAct ? `1.5px solid ${o.color}33` : 'none',
                 fontFamily:'Plus Jakarta Sans, sans-serif',
-                marginBottom:2, transition:'all 0.15s ease' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ width:8, height:8, borderRadius:'50%', background: o.color, flexShrink:0 }}/>
-                <span style={{ fontSize:13, fontWeight: isActive ? 600 : 500, color: isActive ? o.color : C.text }}>
-                  {o.label}
-                </span>
+                marginBottom:4, transition:'all 0.15s ease' }}>
+
+              {/* Avatar with progress ring */}
+              <OwnerAvatar ownerKey={key} size={34} showRing pct={p.pct}/>
+
+              {/* Name + progress */}
+              <div style={{ flex:1, textAlign:'left' }}>
+                <div style={{ fontSize:13, fontWeight:700,
+                  color: isAct ? o.color : C.text }}>{o.label}</div>
+                <div style={{ fontSize:10, color: isAct ? o.color+'99' : C.muted,
+                  marginTop:1, lineHeight:1.3 }}>{o.role}</div>
               </div>
-              <span style={{ fontSize:11, fontWeight:600, color: C.muted }}>{p.pct}%</span>
+
+              <span style={{ fontSize:12, fontWeight:700,
+                color: isAct ? o.color : C.muted }}>{p.pct}%</span>
             </button>
           );
         })}
       </div>
 
-      {/* Spacer */}
-      <div style={{ flex:1 }}/>
-
-      {/* Overall progress */}
+      {/* Global progress */}
       <div style={{ padding:'16px 20px', borderTop:`1px solid ${C.border}` }}>
         <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-          <span style={{ fontSize:11, color: C.muted, fontWeight:600 }}>Progresso geral</span>
-          <span style={{ fontSize:12, fontWeight:700, color: C.primary }}>{overall.pct}%</span>
+          <span style={{ fontSize:11, color:C.muted, fontWeight:600 }}>Progresso geral</span>
+          <span style={{ fontSize:12, fontWeight:700, color:C.primary }}>{overall.pct}%</span>
         </div>
         <ProgressBar pct={overall.pct} height={5}/>
+        <div style={{ fontSize:10, color:C.muted, marginTop:5 }}>
+          {overall.done} / {overall.total} sub-tarefas
+        </div>
       </div>
     </div>
   );
 }
 
-/* ─── Main App ────────────────────────────────────────────── */
+/* ─── App ─────────────────────────────────────────────────── */
 export default function App() {
   const LS_KEY = 'copa2026_project_v1';
 
@@ -859,32 +935,24 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
   });
 
-  const checked  = stored.checked  || {};
-  const notes    = stored.notes    || {};
+  const checked = stored.checked || {};
+  const notes   = stored.notes   || {};
 
-  const save = useCallback(newData => {
-    const merged = { ...stored, ...newData };
-    setStored(merged);
-    localStorage.setItem(LS_KEY, JSON.stringify(merged));
+  const save = useCallback(patch => {
+    const next = { ...stored, ...patch };
+    setStored(next);
+    localStorage.setItem(LS_KEY, JSON.stringify(next));
   }, [stored]);
 
-  function handleCheck(key, value) {
-    save({ checked: { ...checked, [key]: value } });
-  }
-  function handleNote(taskId, text) {
-    save({ notes: { ...notes, [taskId]: text } });
-  }
+  function handleCheck(key, val)   { save({ checked:{ ...checked, [key]:val } }); }
+  function handleNote(taskId, txt) { save({ notes:{ ...notes, [taskId]:txt } }); }
 
   const [view,         setView]         = useState('dashboard');
   const [initialPhase, setInitialPhase] = useState(null);
   const [ownerFilter,  setOwnerFilter]  = useState(null);
-  const [sidebarOpen,  setSidebarOpen]  = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  function navigateToPhase(phaseId) {
-    setInitialPhase(phaseId);
-    setView('phases');
-  }
+  function navigateToPhase(id) { setInitialPhase(id); setView('phases'); }
 
   function handleReset() {
     if (!resetConfirm) { setResetConfirm(true); return; }
@@ -894,100 +962,71 @@ export default function App() {
     setResetConfirm(false);
   }
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const viewLabels = { dashboard:'Dashboard', phases:'Fases do Projeto', myview:'Minha Visão' };
 
   return (
     <>
       <FontLink/>
       <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: ${C.bg}; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
-        button:hover { opacity: 0.9; }
-        @media (max-width: 768px) {
-          .sidebar-overlay { display: block !important; }
-        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'Plus Jakarta Sans',sans-serif; background:${C.bg}; }
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:3px; }
+        button:focus { outline:none; }
       `}</style>
 
       <div style={{ display:'flex', height:'100vh', overflow:'hidden',
-        fontFamily:'Plus Jakarta Sans, sans-serif', background: C.bg }}>
+        fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
 
-        {/* Sidebar — desktop always visible */}
-        <div style={{ display:'flex', height:'100%' }}>
-          <div style={{ display: 'none' }} className="sidebar-overlay"
-            onClick={() => setSidebarOpen(false)}
-            style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)',
-              zIndex:99, display: sidebarOpen ? 'block' : 'none' }}
-          />
-          <div style={{
-            position: 'relative',
-            zIndex: 100,
-            transform: `translateX(0)`,
-            transition: 'transform 0.25s ease',
-          }}>
-            <Sidebar view={view} setView={setView} checked={checked}
-              ownerFilter={ownerFilter} setOwnerFilter={setOwnerFilter}/>
-          </div>
-        </div>
+        <Sidebar view={view} setView={setView} checked={checked}
+          ownerFilter={ownerFilter} setOwnerFilter={setOwnerFilter}/>
 
-        {/* Main content */}
         <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
-          {/* Top header */}
-          <div style={{ height:56, background: C.white, borderBottom:`1px solid ${C.border}`,
-            display:'flex', alignItems:'center', padding:'0 24px',
+          {/* Top bar */}
+          <div style={{ height:54, background:C.white, borderBottom:`1px solid ${C.border}`,
+            display:'flex', alignItems:'center', padding:'0 28px',
             justifyContent:'space-between', flexShrink:0 }}>
+
             <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ fontSize:16, fontWeight:700, color: C.text }}>
-                { view === 'dashboard' ? 'Dashboard'
-                : view === 'phases'    ? 'Fases do Projeto'
-                :                        'Minha Visão' }
-              </div>
+              <span style={{ fontSize:16, fontWeight:700, color:C.text }}>
+                {viewLabels[view]}
+              </span>
               {ownerFilter && (
-                <span style={{ display:'inline-flex', alignItems:'center', gap:5,
-                  background: OWNERS[ownerFilter].color+'18',
+                <span style={{ display:'inline-flex', alignItems:'center', gap:6,
+                  background: OWNERS[ownerFilter].bg,
                   color: OWNERS[ownerFilter].color,
-                  fontSize:11, fontWeight:700, padding:'2px 10px', borderRadius:20,
-                  border:`1px solid ${OWNERS[ownerFilter].color}44` }}>
-                  <span style={{ width:6, height:6, borderRadius:'50%',
-                    background: OWNERS[ownerFilter].color }}/>
+                  fontSize:12, fontWeight:700, padding:'3px 10px 3px 6px',
+                  borderRadius:20, border:`1px solid ${OWNERS[ownerFilter].color}44` }}>
+                  <OwnerAvatar ownerKey={ownerFilter} size={20}/>
                   {OWNERS[ownerFilter].label}
                   <button onClick={() => setOwnerFilter(null)}
-                    style={{ background:'none', border:'none', cursor:'pointer', padding:0,
-                      color: OWNERS[ownerFilter].color, marginLeft:2, lineHeight:1, fontFamily:'inherit' }}>
-                    ×
-                  </button>
+                    style={{ background:'none', border:'none', cursor:'pointer', padding:'0 0 0 2px',
+                      color: OWNERS[ownerFilter].color, fontFamily:'inherit',
+                      fontSize:14, lineHeight:1 }}>×</button>
                 </span>
               )}
             </div>
-            <button
-              onClick={handleReset}
-              onBlur={() => setResetConfirm(false)}
+
+            <button onClick={handleReset} onBlur={() => setResetConfirm(false)}
               style={{ fontSize:11, color: resetConfirm ? C.danger : C.muted,
                 background: resetConfirm ? '#FEF2F2' : 'transparent',
                 border:`1px solid ${resetConfirm ? '#FECACA' : C.border}`,
                 borderRadius:6, padding:'4px 12px', cursor:'pointer',
-                fontFamily:'Plus Jakarta Sans, sans-serif', fontWeight:600,
+                fontFamily:'Plus Jakarta Sans,sans-serif', fontWeight:600,
                 transition:'all 0.15s ease' }}>
               {resetConfirm ? 'Confirmar reset' : 'Resetar progresso'}
             </button>
           </div>
 
-          {/* View content */}
+          {/* Content */}
           <div style={{ flex:1, overflow:'hidden' }}>
-            {view === 'dashboard' && (
-              <DashboardView checked={checked} onNavigatePhase={navigateToPhase}/>
-            )}
-            {view === 'phases' && (
-              <PhasesView checked={checked} onCheck={handleCheck}
-                notes={notes} onNote={handleNote} initialPhase={initialPhase}/>
-            )}
-            {view === 'myview' && (
-              <MyView checked={checked} onCheck={handleCheck}
-                notes={notes} onNote={handleNote}/>
-            )}
+            {view === 'dashboard' && <DashboardView checked={checked} onNavigatePhase={navigateToPhase}/>}
+            {view === 'phases'    && <PhasesView checked={checked} onCheck={handleCheck}
+              notes={notes} onNote={handleNote} initialPhase={initialPhase}/>}
+            {view === 'myview'    && <MyView checked={checked} onCheck={handleCheck}
+              notes={notes} onNote={handleNote}/>}
           </div>
         </div>
       </div>
