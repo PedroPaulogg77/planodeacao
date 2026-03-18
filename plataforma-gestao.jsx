@@ -159,6 +159,21 @@ function calcOverall(checked) {
   PHASES.forEach(ph => ph.tasks.forEach(t => { const p = calcTask(t, checked); total += p.total; done += p.done; }));
   return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
 }
+/* ─── Phase status helper ─────────────────────────────────── */
+// Returns 'done' | 'active' | 'upcoming' for a phase index
+function phaseStatusOf(idx, checked) {
+  const p = calcPhase(PHASES[idx], checked);
+  if (p.pct === 100) return 'done';
+  if (p.pct > 0)     return 'active';
+  return 'upcoming';
+}
+
+const PHASE_STATUS_STYLE = {
+  done:     { node: C.success, nodeBg: '#DCFCE7', border: C.success,     text: '#15803D', label: 'Concluída'   },
+  active:   { node: C.primary, nodeBg: '#EEF2FF', border: C.primary,     text: C.primary, label: 'Em andamento' },
+  upcoming: { node: '#CBD5E1', nodeBg: '#F8FAFC', border: '#E2E8F0',     text: C.muted,   label: 'A iniciar'   },
+};
+
 function tagStyle(tag) {
   if (tag.startsWith('BLOQUEANTE'))  return { bg:'#FEF2F2', color:'#EF4444', border:'#FECACA' };
   if (tag.startsWith('ENTREGÁVEL'))  return { bg:'#F0FDF4', color:'#22C55E', border:'#BBF7D0' };
@@ -546,46 +561,88 @@ function DashboardView({ checked, onNavigatePhase }) {
         </div>
       </div>
 
-      {/* Phases */}
+      {/* ── Phase journey stepper ── */}
       <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
-        letterSpacing:'0.8px', marginBottom:12 }}>Fases</div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))', gap:12, marginBottom:28 }}>
-        {PHASES.map(ph => {
-          const p = calcPhase(ph, checked);
-          const isActive = p.pct > 0 && p.pct < 100;
-          const isDone   = p.pct === 100;
-          // collect unique owners in this phase
-          const phOwners = [...new Set(ph.tasks.map(t => t.owner))];
-          return (
-            <div key={ph.id} onClick={() => onNavigatePhase(ph.id)}
-              style={{ ...card, cursor:'pointer',
-                background: isActive ? '#F5F7FF' : C.white,
-                borderColor: isActive ? '#C7D2FE' : C.border,
-                transition:'all 0.15s ease' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ph.title}</div>
-                  <div style={{ fontSize:10, color:C.muted }}>{ph.timeline}</div>
-                </div>
-                {/* Owner avatars for this phase */}
-                <div style={{ display:'flex', gap:-4 }}>
-                  {phOwners.slice(0,3).map((ok,i) => (
-                    <div key={ok} style={{ marginLeft: i > 0 ? -8 : 0, zIndex: 3-i, position:'relative' }}>
-                      <OwnerAvatar ownerKey={ok} size={22}/>
+        letterSpacing:'0.8px', marginBottom:14 }}>Jornada do Projeto</div>
+
+      {/* Horizontal stepper — scrollable on small screens */}
+      <div style={{ background:C.white, border:`1px solid ${C.border}`, borderRadius:14,
+        padding:'20px 24px', marginBottom:28, boxShadow:'0 1px 3px rgba(0,0,0,0.04)',
+        overflowX:'auto' }}>
+        <div style={{ display:'flex', alignItems:'flex-start', minWidth:640, gap:0 }}>
+          {PHASES.map((ph, idx) => {
+            const status = phaseStatusOf(idx, checked);
+            const ss     = PHASE_STATUS_STYLE[status];
+            const p      = calcPhase(ph, checked);
+            const phOwners = [...new Set(ph.tasks.map(t => t.owner))];
+            const isLast = idx === PHASES.length - 1;
+            return (
+              <React.Fragment key={ph.id}>
+                {/* Step node + card */}
+                <div onClick={() => onNavigatePhase(ph.id)}
+                  style={{ display:'flex', flexDirection:'column', alignItems:'center',
+                    flex:1, cursor:'pointer', minWidth:100 }}>
+
+                  {/* Number circle */}
+                  <div style={{ width:40, height:40, borderRadius:'50%',
+                    background: ss.nodeBg, border:`2px solid ${ss.border}`,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:14, fontWeight:700, color:ss.node, marginBottom:10,
+                    boxShadow: status === 'active' ? `0 0 0 4px ${C.primary}22` : 'none',
+                    transition:'all 0.2s ease', flexShrink:0 }}>
+                    {status === 'done'
+                      ? <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                          <path d="M1.5 6l4 4.5 9-10" stroke={C.success} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      : String(idx + 1).padStart(2, '0')
+                    }
+                  </div>
+
+                  {/* Phase info card */}
+                  <div style={{ background: status === 'active' ? '#F5F7FF' : status === 'done' ? '#F0FDF4' : '#F8FAFC',
+                    border:`1px solid ${ss.border}`, borderRadius:10, padding:'10px 12px',
+                    width:'100%', textAlign:'center', transition:'all 0.15s ease' }}>
+
+                    {/* Status badge */}
+                    <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase',
+                      letterSpacing:'0.5px', color:ss.text, marginBottom:5 }}>
+                      {ss.label}
                     </div>
-                  ))}
+
+                    <div style={{ fontSize:12, fontWeight:700, color: status === 'upcoming' ? C.muted : C.text,
+                      marginBottom:3, lineHeight:1.3 }}>{ph.title}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginBottom:8 }}>{ph.timeline}</div>
+
+                    {/* Progress bar */}
+                    <ProgressBar pct={p.pct} height={3}
+                      color={status === 'done' ? C.success : status === 'active' ? C.primary : '#CBD5E1'}/>
+                    <div style={{ fontSize:11, fontWeight:700, marginTop:5,
+                      color:ss.node }}>{p.pct}%</div>
+
+                    {/* Owner avatars */}
+                    <div style={{ display:'flex', justifyContent:'center', gap:3, marginTop:8 }}>
+                      {phOwners.slice(0,3).map(ok => (
+                        <OwnerAvatar key={ok} ownerKey={ok} size={20}/>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <ProgressBar pct={p.pct}
-                color={isDone ? C.success : isActive ? C.primary : C.muted}/>
-              <div style={{ display:'flex', justifyContent:'space-between', marginTop:8 }}>
-                <span style={{ fontSize:11, color:C.muted }}>{p.done}/{p.total} tarefas</span>
-                <span style={{ fontSize:12, fontWeight:700,
-                  color: isDone ? C.success : isActive ? C.primary : C.muted }}>{p.pct}%</span>
-              </div>
-            </div>
-          );
-        })}
+
+                {/* Connector arrow */}
+                {!isLast && (
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
+                    paddingTop:14, width:28, flexShrink:0 }}>
+                    <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
+                      <line x1="0" y1="8" x2="14" y2="8" stroke="#CBD5E1" strokeWidth="1.5"/>
+                      <path d="M10 3l6 5-6 5" stroke="#CBD5E1" strokeWidth="1.5"
+                        strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    </svg>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
       {/* Team progress */}
@@ -691,46 +748,99 @@ function PhasesView({ checked, onCheck, notes, onNote, initialPhase }) {
         })}
       </div>
 
-      {/* Phase sections */}
-      {visiblePhases.map(ph => {
-        const filteredTasks = ph.tasks.filter(t =>
-          filterOwner === 'all' || t.owner === filterOwner || t.owner === 'todos'
-        );
-        if (!filteredTasks.length) return null;
-        const phProg = calcPhase(ph, checked);
-        return (
-          <div key={ph.id} style={{ marginBottom:32 }}>
-            {/* Phase header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-              marginBottom:12, flexWrap:'wrap', gap:10,
-              paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
-              <div>
-                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{ph.title}</div>
-                <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{ph.timeline}</div>
+      {/* ── Vertical stepper ── */}
+      <div style={{ position:'relative' }}>
+        {visiblePhases.map((ph, visIdx) => {
+          const filteredTasks = ph.tasks.filter(t =>
+            filterOwner === 'all' || t.owner === filterOwner || t.owner === 'todos'
+          );
+          if (!filteredTasks.length) return null;
+
+          const globalIdx = PHASES.indexOf(ph);
+          const status    = phaseStatusOf(globalIdx, checked);
+          const ss        = PHASE_STATUS_STYLE[status];
+          const phProg    = calcPhase(ph, checked);
+          const phOwners  = [...new Set(ph.tasks.map(t => t.owner))];
+          const isLast    = visIdx === visiblePhases.length - 1;
+
+          return (
+            <div key={ph.id} style={{ display:'flex', gap:0, marginBottom: isLast ? 0 : 8 }}>
+
+              {/* ── Left rail: number + vertical line ── */}
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center',
+                width:52, flexShrink:0 }}>
+
+                {/* Number node */}
+                <div style={{ width:44, height:44, borderRadius:'50%',
+                  background: ss.nodeBg, border:`2px solid ${ss.border}`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:14, fontWeight:700, color:ss.node, flexShrink:0, zIndex:1,
+                  boxShadow: status==='active' ? `0 0 0 5px ${C.primary}18` : 'none',
+                  transition:'all 0.2s ease' }}>
+                  {status === 'done'
+                    ? <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                        <path d="M1.5 6l4 4.5 9-10" stroke={C.success} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    : String(globalIdx + 1).padStart(2, '0')
+                  }
+                </div>
+
+                {/* Vertical connector */}
+                {!isLast && (
+                  <div style={{ flex:1, width:2, background: status==='done' ? `${C.success}44` : '#E2E8F0',
+                    minHeight:32, marginTop:4, borderRadius:2, marginBottom:4 }}/>
+                )}
               </div>
-              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                {/* Owner avatars */}
-                <div style={{ display:'flex', gap:4 }}>
-                  {[...new Set(ph.tasks.map(t => t.owner))].map(ok => (
-                    <OwnerAvatar key={ok} ownerKey={ok} size={26}/>
-                  ))}
+
+              {/* ── Right content ── */}
+              <div style={{ flex:1, paddingBottom: isLast ? 0 : 24, paddingLeft:12 }}>
+
+                {/* Phase header banner */}
+                <div style={{ background: status==='active' ? '#F5F7FF'
+                                         : status==='done'   ? '#F0FDF4' : '#F8FAFC',
+                  border:`1px solid ${ss.border}`, borderRadius:12,
+                  padding:'14px 18px', marginBottom:12,
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  flexWrap:'wrap', gap:10 }}>
+
+                  <div>
+                    {/* Status label */}
+                    <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase',
+                      letterSpacing:'0.6px', color:ss.text, marginBottom:4 }}>
+                      Fase {globalIdx + 1} · {ss.label}
+                    </div>
+                    <div style={{ fontSize:16, fontWeight:700, color: status==='upcoming' ? C.sub : C.text,
+                      marginBottom:3 }}>{ph.title}</div>
+                    <div style={{ fontSize:11, color:C.muted }}>{ph.timeline}</div>
+                  </div>
+
+                  <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                    {/* Owner avatars */}
+                    <div style={{ display:'flex', gap:4 }}>
+                      {phOwners.map(ok => <OwnerAvatar key={ok} ownerKey={ok} size={28}/>)}
+                    </div>
+                    {/* Progress */}
+                    <div style={{ textAlign:'right' }}>
+                      <div style={{ fontSize:20, fontWeight:700, color:ss.node, lineHeight:1 }}>{phProg.pct}%</div>
+                      <div style={{ fontSize:11, color:C.muted, marginTop:3 }}>{phProg.done}/{phProg.total} sub-tarefas</div>
+                      <div style={{ width:90, marginTop:5 }}>
+                        <ProgressBar pct={phProg.pct} height={4}
+                          color={status==='done' ? C.success : status==='active' ? C.primary : '#CBD5E1'}/>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ width:100 }}>
-                  <ProgressBar pct={phProg.pct} height={5}
-                    color={phProg.pct===100 ? C.success : C.primary}/>
-                </div>
-                <span style={{ fontSize:13, fontWeight:700, minWidth:36,
-                  color: phProg.pct===100 ? C.success : C.primary }}>{phProg.pct}%</span>
+
+                {/* Tasks */}
+                {filteredTasks.map(task => (
+                  <TaskCard key={task.id} task={task} checked={checked} onCheck={onCheck}
+                    notes={notes} onNote={onNote}/>
+                ))}
               </div>
             </div>
-
-            {filteredTasks.map(task => (
-              <TaskCard key={task.id} task={task} checked={checked} onCheck={onCheck}
-                notes={notes} onNote={onNote}/>
-            ))}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -799,15 +909,33 @@ function MyView({ checked, onCheck, notes, onNote }) {
       </div>
 
       {/* Tasks by phase */}
-      {PHASES.map(ph => {
+      {PHASES.map((ph, idx) => {
         const tasks = ph.tasks.filter(t => t.owner === active || t.owner === 'todos');
         if (!tasks.length) return null;
+        const status = phaseStatusOf(idx, checked);
+        const ss     = PHASE_STATUS_STYLE[status];
         return (
           <div key={ph.id} style={{ marginBottom:28 }}>
-            <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
-              letterSpacing:'0.8px', marginBottom:10,
-              paddingBottom:8, borderBottom:`1px solid ${C.border}` }}>
-              {ph.title} · <span style={{ color:C.muted, fontWeight:500 }}>{ph.timeline}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10,
+              paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
+              {/* Mini numbered node */}
+              <div style={{ width:28, height:28, borderRadius:'50%', flexShrink:0,
+                background:ss.nodeBg, border:`2px solid ${ss.border}`,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:11, fontWeight:700, color:ss.node }}>
+                {status === 'done'
+                  ? <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4l3 3 5-6" stroke={C.success} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  : idx + 1}
+              </div>
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:ss.text, textTransform:'uppercase',
+                  letterSpacing:'0.5px' }}>Fase {idx+1} · {ss.label}</div>
+                <div style={{ fontSize:13, fontWeight:700, color: status==='upcoming' ? C.sub : C.text }}>
+                  {ph.title}
+                </div>
+              </div>
             </div>
             {tasks.map(task => (
               <TaskCard key={task.id} task={task} checked={checked} onCheck={onCheck}
@@ -912,15 +1040,46 @@ function Sidebar({ view, setView, checked, ownerFilter, setOwnerFilter, onClose 
         })}
       </div>
 
-      {/* Global progress */}
-      <div style={{ padding:'16px 20px', borderTop:`1px solid ${C.border}` }}>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-          <span style={{ fontSize:11, color:C.muted, fontWeight:600 }}>Progresso geral</span>
-          <span style={{ fontSize:12, fontWeight:700, color:C.primary }}>{overall.pct}%</span>
+      {/* Mini phase stepper + overall */}
+      <div style={{ padding:'14px 16px', borderTop:`1px solid ${C.border}` }}>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
+          <span style={{ fontSize:10, fontWeight:700, color:C.muted, textTransform:'uppercase', letterSpacing:'0.8px' }}>
+            Fases
+          </span>
+          <span style={{ fontSize:11, fontWeight:700, color:C.primary }}>{overall.pct}%</span>
         </div>
-        <ProgressBar pct={overall.pct} height={5}/>
+
+        {/* 6 mini nodes in a row with line */}
+        <div style={{ display:'flex', alignItems:'center', gap:0, marginBottom:10 }}>
+          {PHASES.map((ph, idx) => {
+            const status = phaseStatusOf(idx, checked);
+            const ss     = PHASE_STATUS_STYLE[status];
+            const isLast = idx === PHASES.length - 1;
+            return (
+              <React.Fragment key={ph.id}>
+                <div title={`Fase ${idx+1}: ${ph.title}`}
+                  style={{ width:22, height:22, borderRadius:'50%',
+                    background: ss.nodeBg, border:`2px solid ${ss.border}`,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:9, fontWeight:700, color:ss.node, flexShrink:0 }}>
+                  {status === 'done'
+                    ? <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                        <path d="M1 3.5l2.5 2.5 5-5" stroke={C.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    : idx + 1
+                  }
+                </div>
+                {!isLast && (
+                  <div style={{ flex:1, height:2, background: status==='done' ? `${C.success}55` : '#E2E8F0' }}/>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        <ProgressBar pct={overall.pct} height={4}/>
         <div style={{ fontSize:10, color:C.muted, marginTop:5 }}>
-          {overall.done} / {overall.total} sub-tarefas
+          {overall.done} / {overall.total} sub-tarefas concluídas
         </div>
       </div>
     </div>
